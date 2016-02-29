@@ -2,19 +2,11 @@
   "use strict";
 
   function isArray(obj) {
-    if (obj !== null) {
-      return Object.prototype.toString.call(obj) === "[object Array]";
-    } else {
-      return false;
-    }
+		return obj !== null && Object.prototype.toString.call(obj) === "[object Array]";
   }
 
   function isObject(obj) {
-    if (obj !== null) {
-      return Object.prototype.toString.call(obj) === "[object Object]";
-    } else {
-      return false;
-    }
+		return obj !== null && Object.prototype.toString.call(obj) === "[object Object]";
   }
 
   function strictDeepEqual(first, second) {
@@ -77,10 +69,7 @@
     // null value
 
     // First check the scalar values.
-    if (obj === "" || obj === false || obj === null) {
-        return true;
-    } else if (isArray(obj) && obj.length === 0) {
-        // Check for an empty array.
+    if (obj === "" || obj === false || obj === null || (isArray(obj) && obj.length === 0)) {
         return true;
     } else if (isObject(obj)) {
         // Check for an empty object.
@@ -93,16 +82,15 @@
             }
         }
         return true;
-    } else {
-        return false;
     }
+		return false;
   }
 
   function objValues(obj) {
     var keys = Object.keys(obj);
     var values = [];
-    for (var i = 0; i < keys.length; i++) {
-      values.push(obj[keys[i]]);
+    for (var i = 0; i < keys.length;) {
+      values.push(obj[keys[i++]]);
     }
     return values;
   }
@@ -272,10 +260,7 @@
 
       consumeUnquotedIdentifier: function(stream) {
           var start = this.current;
-          this.current++;
-          while (identifierTrailing[stream[this.current]] !== undefined) {
-              this.current++;
-          }
+          while (identifierTrailing[stream[++this.current]] !== undefined); 
           return stream.slice(start, this.current);
       },
 
@@ -288,10 +273,9 @@
               var current = this.current;
               if (stream[current] === "\\" && (stream[current + 1] === "\\" ||
                                                stream[current + 1] === "\"")) {
-                  current += 2;
-              } else {
-                  current++;
+                  current ++;
               }
+							current++;
               this.current = current;
           }
           this.current++;
@@ -307,10 +291,9 @@
               var current = this.current;
               if (stream[current] === "\\" && (stream[current + 1] === "\\" ||
                                                stream[current + 1] === "'")) {
-                  current += 2;
-              } else {
-                  current++;
+                  current ++;
               }
+							current++;
               this.current = current;
           }
           this.current++;
@@ -338,9 +321,8 @@
           } else if (stream[this.current] === "]") {
               this.current++;
               return {type: "Flatten", value: "[]", start: start};
-          } else {
-              return {type: "Lbracket", value: "[", start: start};
-          }
+          } 
+					return {type: "Lbracket", value: "[", start: start};
       },
 
       consumeOperator: function(stream) {
@@ -351,23 +333,20 @@
               if (stream[this.current] === "=") {
                   this.current++;
                   return {type: "NE", value: "!=", start: start};
-              } else {
-                return {type: "Not", value: "!", start: start};
               }
+							return {type: "Not", value: "!", start: start};
           } else if (startingChar === "<") {
               if (stream[this.current] === "=") {
                   this.current++;
                   return {type: "LTE", value: "<=", start: start};
-              } else {
-                  return {type: "LT", value: "<", start: start};
               }
+							return {type: "LT", value: "<", start: start};
           } else if (startingChar === ">") {
               if (stream[this.current] === "=") {
                   this.current++;
                   return {type: "GTE", value: ">=", start: start};
-              } else {
-                  return {type: "GT", value: ">", start: start};
               }
+							return {type: "GT", value: ">", start: start};
           } else if (startingChar === "=") {
               if (stream[this.current] === "=") {
                   this.current++;
@@ -386,11 +365,9 @@
               var current = this.current;
               if (stream[current] === "\\" && (stream[current + 1] === "\\" ||
                                                stream[current + 1] === "`")) {
-                  current += 2;
-              } else {
                   current++;
               }
-              this.current = current;
+              this.current = current+1;
           }
           var literalString = stream.slice(start, this.current).trimLeft();
           literalString = literalString.replace("\\`", "`");
@@ -412,9 +389,7 @@
 
           if (literalString === "") {
               return false;
-          } else if (startingChars.indexOf(literalString[0]) >= 0) {
-              return true;
-          } else if (jsonLiterals.indexOf(literalString) >= 0) {
+          } else if (startingChars.indexOf(literalString[0]) >= 0 || jsonLiterals.indexOf(literalString) >= 0) {
               return true;
           } else if (numberLooking.indexOf(literalString[0]) >= 0) {
               try {
@@ -423,9 +398,8 @@
               } catch (ex) {
                   return false;
               }
-          } else {
-              return false;
           }
+					return false;
       }
   };
 
@@ -522,10 +496,8 @@
             var node = {type: "Field", name: token.value};
             if (this.lookahead(0) === "Lparen") {
                 throw new Error("Quoted identifier not allowed for function names.");
-            } else {
-                return node;
-            }
-            break;
+            } 
+						return node;
           case "Not":
             right = this.expression(this.bindingPower.Not);
             return {type: "NotExpression", children: [right]};
@@ -559,10 +531,8 @@
                 right = this.parseProjectionRHS(this.bindingPower.Star);
                 return {type: "Projection",
                         children: [{type: "Identity"}, right]};
-            } else {
-                return this.parseMultiselectList();
-            }
-            break;
+            } 
+						return this.parseMultiselectList();
           case "Current":
             return {type: "Current"};
           case "Expref":
@@ -594,13 +564,11 @@
             if (this.lookahead(0) !== "Star") {
                 right = this.parseDotRHS(rbp);
                 return {type: "Subexpression", children: [left, right]};
-            } else {
-                // Creating a projection.
-                this.advance();
-                right = this.parseProjectionRHS(rbp);
-                return {type: "ValueProjection", children: [left, right]};
-            }
-            break;
+            } 
+						// Creating a projection.
+						this.advance();
+						right = this.parseProjectionRHS(rbp);
+						return {type: "ValueProjection", children: [left, right]};
           case "Pipe":
             right = this.expression(this.bindingPower.Pipe);
             return {type: "Pipe", children: [left, right]};
@@ -654,27 +622,24 @@
             if (token.type === "Number" || token.type === "Colon") {
                 right = this.parseIndexExpression();
                 return this.projectIfSlice(left, right);
-            } else {
-                this.match("Star");
-                this.match("Rbracket");
-                right = this.parseProjectionRHS(this.bindingPower.Star);
-                return {type: "Projection", children: [left, right]};
-            }
-            break;
+            } 
+						this.match("Star");
+						this.match("Rbracket");
+						right = this.parseProjectionRHS(this.bindingPower.Star);
+						return {type: "Projection", children: [left, right]};
           default:
             this.errorToken(this.lookaheadToken(0));
         }
       },
 
       match: function(tokenType) {
-          if (this.lookahead(0) === tokenType) {
-              this.advance();
-          } else {
+          if (this.lookahead(0) !== tokenType) {
               var t = this.lookaheadToken(0);
               var error = new Error("Expected " + tokenType + ", got: " + t.type);
               error.name = "ParserError";
               throw error;
-          }
+          } 
+					this.advance();
       },
 
       errorToken: function(token) {
@@ -689,14 +654,13 @@
       parseIndexExpression: function() {
           if (this.lookahead(0) === "Colon" || this.lookahead(1) === "Colon") {
               return this.parseSliceExpression();
-          } else {
-              var node = {
-                  type: "Index",
-                  value: this.lookaheadToken(0).value};
-              this.advance();
-              this.match("Rbracket");
-              return node;
           }
+					var node = {
+							type: "Index",
+							value: this.lookaheadToken(0).value};
+					this.advance();
+					this.match("Rbracket");
+					return node;
       },
 
       projectIfSlice: function(left, right) {
@@ -706,9 +670,8 @@
                   type: "Projection",
                   children: [indexExpr, this.parseProjectionRHS(this.bindingPower.Star)]
               };
-          } else {
-              return indexExpr;
           }
+					return indexExpr;
       },
 
       parseSliceExpression: function() {
@@ -843,13 +806,10 @@
                   field = value[node.name];
                   if (field === undefined) {
                       return null;
-                  } else {
-                      return field;
-                  }
-              } else {
-                return null;
+                  } 
+									return field;
               }
-              break;
+							return null;
             case "Subexpression":
               result = this.visit(node.children[0], value);
               for (i = 1; i < node.children.length; i++) {
@@ -1260,9 +1220,8 @@
                 }
                 return true;
             }
-        } else {
-            return actual === expected;
         }
+				return actual === expected;
     },
     getTypeName: function(obj) {
         switch (Object.prototype.toString.call(obj)) {
@@ -1281,9 +1240,8 @@
               // tagged with a jmespathType attr of 'Expref';
               if (obj.jmespathType === "Expref") {
                 return TYPE_EXPREF;
-              } else {
-                return TYPE_OBJECT;
-              }
+              } 
+							return TYPE_OBJECT;
         }
     },
 
@@ -1306,11 +1264,10 @@
               reversedStr += originalStr[i];
           }
           return reversedStr;
-        } else {
-          var reversedArray = resolvedArgs[0].slice(0);
-          reversedArray.reverse();
-          return reversedArray;
-        }
+        } 
+				var reversedArray = resolvedArgs[0].slice(0);
+				reversedArray.reverse();
+				return reversedArray;
     },
 
     functionAbs: function(resolvedArgs) {
@@ -1341,11 +1298,10 @@
     functionLength: function(resolvedArgs) {
        if (!isObject(resolvedArgs[0])) {
          return resolvedArgs[0].length;
-       } else {
-         // As far as I can tell, there's no way to get the length
-         // of an object without O(n) iteration through the object.
-         return Object.keys(resolvedArgs[0]).length;
        }
+			 // As far as I can tell, there's no way to get the length
+			 // of an object without O(n) iteration through the object.
+			 return Object.keys(resolvedArgs[0]).length;
     },
 
     functionMap: function(resolvedArgs) {
@@ -1375,19 +1331,17 @@
         var typeName = this.getTypeName(resolvedArgs[0][0]);
         if (typeName === TYPE_NUMBER) {
           return Math.max.apply(Math, resolvedArgs[0]);
-        } else {
-          var elements = resolvedArgs[0];
-          var maxElement = elements[0];
-          for (var i = 1; i < elements.length; i++) {
-              if (maxElement.localeCompare(elements[i]) < 0) {
-                  maxElement = elements[i];
-              }
-          }
-          return maxElement;
-        }
-      } else {
-          return null;
+        } 
+				var elements = resolvedArgs[0];
+				var maxElement = elements[0];
+				for (var i = 1; i < elements.length; i++) {
+						if (maxElement.localeCompare(elements[i]) < 0) {
+								maxElement = elements[i];
+						}
+				}
+				return maxElement;
       }
+			return null;
     },
 
     functionMin: function(resolvedArgs) {
@@ -1395,26 +1349,24 @@
         var typeName = this.getTypeName(resolvedArgs[0][0]);
         if (typeName === TYPE_NUMBER) {
           return Math.min.apply(Math, resolvedArgs[0]);
-        } else {
-          var elements = resolvedArgs[0];
-          var minElement = elements[0];
-          for (var i = 1; i < elements.length; i++) {
-              if (elements[i].localeCompare(minElement) < 0) {
-                  minElement = elements[i];
-              }
-          }
-          return minElement;
         }
-      } else {
-        return null;
+				var elements = resolvedArgs[0];
+				var minElement = elements[0];
+				for (var i = 1; i < elements.length; i++) {
+						if (elements[i].localeCompare(minElement) < 0) {
+								minElement = elements[i];
+						}
+				}
+				return minElement;
       }
+			return null;
     },
 
     functionSum: function(resolvedArgs) {
       var sum = 0;
       var listToSum = resolvedArgs[0];
-      for (var i = 0; i < listToSum.length; i++) {
-        sum += listToSum[i];
+      for (var i = 0; i < listToSum.length;) {
+        sum += listToSum[i++];
       }
       return sum;
     },
@@ -1461,17 +1413,15 @@
     functionToArray: function(resolvedArgs) {
         if (this.getTypeName(resolvedArgs[0]) === TYPE_ARRAY) {
             return resolvedArgs[0];
-        } else {
-            return [resolvedArgs[0]];
         }
+				return [resolvedArgs[0]];
     },
 
     functionToString: function(resolvedArgs) {
         if (this.getTypeName(resolvedArgs[0]) === TYPE_STRING) {
             return resolvedArgs[0];
-        } else {
-            return JSON.stringify(resolvedArgs[0]);
         }
+				return JSON.stringify(resolvedArgs[0]);
     },
 
     functionToNumber: function(resolvedArgs) {
@@ -1498,9 +1448,7 @@
     },
 
     functionSort: function(resolvedArgs) {
-        var sortedArray = resolvedArgs[0].slice(0);
-        sortedArray.sort();
-        return sortedArray;
+        return resolvedArgs[0].slice(0).sort();
     },
 
     functionSortBy: function(resolvedArgs) {
@@ -1543,12 +1491,11 @@
             return 1;
           } else if (exprA < exprB) {
             return -1;
-          } else {
-            // If they're equal compare the items by their
-            // order to maintain relative order of equal keys
-            // (i.e. to get a stable sort).
-            return a[0] - b[0];
           }
+					// If they're equal compare the items by their
+					// order to maintain relative order of equal keys
+					// (i.e. to get a stable sort).
+					return a[0] - b[0];
         });
         // Undecorate: extract out the original list elements.
         for (var j = 0; j < decorated.length; j++) {
